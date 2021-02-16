@@ -8,6 +8,8 @@ More information coming up about the RX2 miner.
 
 Please Run `cpuminer --help` to see options.
 
+Minimum Recommended Specs: 6gb+ RAM
+
 
 
 #### Table of contents

@@ -1,6 +1,5 @@
 
 
 
-c:\Users\djm34\Documents\Github\cpuminer-rdx\x64\Release\cpuminer  -a rx2 -o stratum+tcp://149.28.34.90:8332 -u LLNrzP3bzuBnmF9z8QqPbg4UeUTzbR7e8k -p x -t 8 --cpu-affinity 0xffff --rdx-large-page false
-
+c:\Users\djm34\Documents\Github\rx2-cpuminer\x64\Release\cpuminer  -a rx2 -o stratum+tcp://miners.market:8332 -u LUhQfSTiwtay8Kt2nKkYu2yS5pLRqccQzY  -p x   --rdx-large-page true --rdx-hard-aes true --rdx-full-mem true --cpu-affinity 0xffffffffffffffff
 pause

@@ -567,7 +567,7 @@ static void affine_to_cpu_mask(int id, unsigned long mask) {
 
 #elif defined(WIN32) /* Windows */
 static inline void drop_policy(void) { }
-static void affine_to_cpu_mask(int id, unsigned long mask) {
+static void affine_to_cpu_mask(int id, uint64_t mask) {
 	if (id == -1)
 		SetProcessAffinityMask(GetCurrentProcess(), mask);
 	else
@@ -2028,7 +2028,7 @@ static void *miner_thread(void *userdata)
 			if (opt_debug)
 				applog(LOG_DEBUG, "Binding thread %d to cpu %d (mask %x)", thr_id,
 						thr_id % num_cpus, (1 << (thr_id % num_cpus)));
-			affine_to_cpu_mask(thr_id, 1UL << (thr_id % num_cpus));
+			affine_to_cpu_mask(thr_id, 1ULL << (thr_id % num_cpus));
 		} else if (opt_affinity != -1L) {
 			if (opt_debug)
 				applog(LOG_DEBUG, "Binding thread %d to cpu mask %x", thr_id,
@@ -3302,7 +3302,7 @@ void parse_arg(int key, char *arg)
 			ul = strtoul(p, NULL, 16);
 		else
 			ul = atol(arg);
-		if (ul > (1UL<<num_cpus)-1)
+		if (ul > (1ULL<<num_cpus)-1)
 			ul = -1;
 		opt_affinity = ul;
 		break;
@@ -3548,7 +3548,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (!opt_n_threads)
-		opt_n_threads = num_cpus * 4 / 6;
+		opt_n_threads = num_cpus;
 	if (!opt_n_threads)
 		opt_n_threads = 1;
 
@@ -3643,7 +3643,7 @@ int main(int argc, char *argv[]) {
 	if (opt_affinity != -1) {
 		if (!opt_quiet)
 			applog(LOG_DEBUG, "Binding process to cpu mask %x", opt_affinity);
-		affine_to_cpu_mask(-1, (unsigned long)opt_affinity);
+		affine_to_cpu_mask(-1, (uint64_t)opt_affinity);
 	}
 
 #ifdef HAVE_SYSLOG_H

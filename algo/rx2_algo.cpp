@@ -14,8 +14,10 @@ extern "C"
 }
 #endif
 
-#define MAXCPU 32
-//#define num_cpus 1
+#define MAXCPU 128
+//#define cpus_number 1
+
+static int cpus_number = num_cpus;
 static int is_init[MAXCPU];
 static uint256 randomx_seed[MAXCPU]; 
 
@@ -42,13 +44,13 @@ void randomx_init_barrier(const int num_threads) {
 static void* dataset_init_cpu_thr(void *arg) {
 
 	int i = *(int*)arg;
-	uint32_t n = num_cpus;
+	uint32_t n = cpus_number;
 	randomx_init_dataset(randomx_cpu_dataset, randomx_cpu_cache, (i * randomx_dataset_item_count()) / n, ((i + 1) * randomx_dataset_item_count()) / n - (i * randomx_dataset_item_count()) / n);
 	return NULL;
 }
 static void init_dataset(int thr_id, uint256 theseed)
 {
-
+	cpus_number = min(32, num_cpus);
 	if (thr_id == 0)
 	{
 
@@ -82,7 +84,7 @@ static void init_dataset(int thr_id, uint256 theseed)
 		randomx_init_cache(randomx_cpu_cache, theseed.GetHex().c_str(), theseed.GetHex().size());
 		randomx_cpu_dataset = randomx_alloc_dataset(flags);
 		if (dataset_threads == NULL) {
-			dataset_threads = (Dataset_threads*)malloc(num_cpus * sizeof(Dataset_threads));
+			dataset_threads = (Dataset_threads*)malloc(cpus_number * sizeof(Dataset_threads));
 		}
 		//// make sure all the threads are ran on different cpu thread
 #if !defined(_MSC_VER)
@@ -90,7 +92,7 @@ static void init_dataset(int thr_id, uint256 theseed)
 		pthread_attr_t attr;
 		pthread_attr_init(&attr);
 #endif
-		for (int i = 0; i < num_cpus; ++i) {
+		for (int i = 0; i < cpus_number; ++i) {
 			dataset_threads[i].id = i;
 #if defined(_MSC_VER)
 			pthread_create(&dataset_threads[i].thr, NULL, dataset_init_cpu_thr, (void*)&dataset_threads[i].id);
@@ -101,7 +103,7 @@ static void init_dataset(int thr_id, uint256 theseed)
 			pthread_create(&dataset_threads[i].thr, &attr, dataset_init_cpu_thr, (void*)&dataset_threads[i].id);
 #endif
 		}
-		for (int i = 0; i < num_cpus; ++i) {
+		for (int i = 0; i < cpus_number; ++i) {
 			pthread_join(dataset_threads[i].thr, NULL);
 		}
 
@@ -137,11 +139,11 @@ int scanhash_rx2(int thr_id, struct work* work, const unsigned char* seedhash, u
 
   uint256 TheSeed;
   memcpy(&TheSeed, endian, 32);
-
+  
 	  if (!is_init[thr_id]) {
 		  randomx_seed[thr_id] = TheSeed;
 		  if (thr_id == 0)
-		  printf("init rx2 seed = %s\n", TheSeed.GetHex().c_str());
+		  printf("rx2 seed = %s\n", TheSeed.GetHex().c_str());
 		if (rdx_full_mem) {
 			  init_dataset(thr_id, TheSeed);
 			  rx_vm[thr_id] = randomx_create_vm(flags, nullptr, randomx_cpu_dataset);

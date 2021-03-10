@@ -549,12 +549,12 @@ static inline void drop_policy(void)
 #define pthread_setaffinity_np(tid,sz,s) {} /* only do process affinity */
 #endif
 
-static void affine_to_cpu_mask(int id, unsigned long mask) {
+static void affine_to_cpu_mask(int id, uint64_t mask) {
 	cpu_set_t set;
 	CPU_ZERO(&set);
 	for (uint8_t i = 0; i < num_cpus; i++) {
 		// cpu mask
-		if (mask & (1UL<<i)) { CPU_SET(i, &set); }
+		if (mask & (1ULL<<i)) { CPU_SET(i, &set); }
 	}
 	if (id == -1) {
 		// process affinity
@@ -575,7 +575,7 @@ static void affine_to_cpu_mask(int id, uint64_t mask) {
 }
 #else
 static inline void drop_policy(void) { }
-static void affine_to_cpu_mask(int id, unsigned long mask) { }
+static void affine_to_cpu_mask(int id, uint64_t mask) { }
 #endif
 
 void get_currentalgo(char* buf, int sz)
@@ -2023,7 +2023,7 @@ static void *miner_thread(void *userdata)
 	}
 
 	/* Cpu thread affinity */
-	if (num_cpus > 1) {
+	if (num_cpus > 1 && num_cpus<=64) {
 		if (opt_affinity == -1 && opt_n_threads > 1) {
 			if (opt_debug)
 				applog(LOG_DEBUG, "Binding thread %d to cpu %d (mask %x)", thr_id,
@@ -3640,7 +3640,7 @@ int main(int argc, char *argv[]) {
 		SetPriorityClass(GetCurrentProcess(), prio);
 	}
 #endif
-	if (opt_affinity != -1) {
+	if (opt_affinity != -1 && num_cpus<=64) {
 		if (!opt_quiet)
 			applog(LOG_DEBUG, "Binding process to cpu mask %x", opt_affinity);
 		affine_to_cpu_mask(-1, (uint64_t)opt_affinity);

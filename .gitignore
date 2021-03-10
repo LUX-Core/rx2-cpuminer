@@ -7,3 +7,5 @@
 *.ipch
 *.log
 x64/Release/cpuminer.vcxproj.FileListAbsolute.txt
+x64/Release/*
+*.obj

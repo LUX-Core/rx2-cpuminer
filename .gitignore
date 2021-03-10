@@ -1,0 +1,9 @@
+
+.vs/cpuminer/v16/.suo
+*.db
+*.db-shm
+*.db-wal
+*.opendb
+*.ipch
+*.log
+x64/Release/cpuminer.vcxproj.FileListAbsolute.txt

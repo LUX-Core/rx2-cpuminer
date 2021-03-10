@@ -50,7 +50,11 @@ static void* dataset_init_cpu_thr(void *arg) {
 }
 static void init_dataset(int thr_id, uint256 theseed)
 {
+#if defined(_MSC_VER)
 	cpus_number = min(32, num_cpus);
+#else
+	cpus_number = std::min(32, num_cpus);
+#endif
 	if (thr_id == 0)
 	{
 

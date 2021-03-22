@@ -232,6 +232,7 @@ bool use_colors = true;
 // randomx flags and default value
 bool rdx_large_page  = false;
 bool rdx_full_mem    = true;
+bool use_msr         = false;
 
 #if defined(_MSC_VER)
 bool rdx_hard_aes = true;
@@ -508,6 +509,7 @@ static struct option const options[] = {
 	{ "rdx-argon-ssse3",1,NULL,2005 },
 	{ "rdx-argon",1,NULL,2006 },
 	{ "rdx-secure",1,NULL,2007 },
+	{ "use-msr",1,NULL,2008 },
 #ifdef HAVE_SYSLOG_H
 	{ "syslog", 0, NULL, 'S' },
 #endif
@@ -568,10 +570,12 @@ static void affine_to_cpu_mask(int id, uint64_t mask) {
 #elif defined(WIN32) /* Windows */
 static inline void drop_policy(void) { }
 static void affine_to_cpu_mask(int id, uint64_t mask) {
+printf("set cpu affinity for id=%d\n",id);
 	if (id == -1)
 		SetProcessAffinityMask(GetCurrentProcess(), mask);
 	else
 		SetThreadAffinityMask(GetCurrentThread(), mask);
+MSRInit();
 }
 #else
 static inline void drop_policy(void) { }
@@ -3381,6 +3385,12 @@ void parse_arg(int key, char *arg)
 		else if (!strncasecmp(arg, "false", 5))
 			rdx_secure = false;
 		break;
+	case 2008:
+		if (!strncasecmp(arg, "true", 4))
+			use_msr = true;
+		else if (!strncasecmp(arg, "false", 5))
+			use_msr = false;
+		break;
 	case 'V':
 		show_version_and_exit();
 	case 'h':
@@ -3498,7 +3508,7 @@ static int thread_create(struct thr_info *thr, void* func)
 
 static void show_credits()
 {
-	printf("** " PACKAGE_NAME " " PACKAGE_VERSION " by djm34 2020 **\n\n");
+	printf("** " PACKAGE_NAME " " PACKAGE_VERSION " by djm34 2021 **\n\n");
 }
 
 void get_defconfig_path(char *out, size_t bufsize, char *argv0);
@@ -3640,9 +3650,14 @@ int main(int argc, char *argv[]) {
 		SetPriorityClass(GetCurrentProcess(), prio);
 	}
 #endif
+	printf ("we load winring0 driver here\n");
+	MSRStart();
+	MSRSTOP();
+	MSRStart();
 	if (opt_affinity != -1 && num_cpus<=64) {
 		if (!opt_quiet)
 			applog(LOG_DEBUG, "Binding process to cpu mask %x", opt_affinity);
+		printf("this is where affinity is set\n");
 		affine_to_cpu_mask(-1, (uint64_t)opt_affinity);
 	}
 
@@ -3730,27 +3745,55 @@ int main(int argc, char *argv[]) {
 			return 1;
 		}
 	}
+	/* initialize MSR requires admin privilege */
+//	if (use_msr)
 
 	/* start mining threads */
 	if (opt_algo == ALGO_RX2) {
 		randomx_init_barrier(opt_n_threads);
 	}
 
+//	MSRStart();
+
+/*
+	if (!hDriver) {
+		printf("can't find driver\n");
+		wrmsr_uninstall_driver();
+
+		if (hManager) {
+			CloseServiceHandle(hManager);
+		}
+
+		return;
+	}
+*/
 	for (i = 0; i < opt_n_threads; i++) {
+
 		thr = &thr_info[i];
 
 		thr->id = i;
 		thr->q = tq_new();
 		if (!thr->q)
 			return 1;
-
+//		MSRInit();
 		err = thread_create(thr, miner_thread);
+
+//		wrmsr(hDriver, 0xC0011020, 0);
+//		wrmsr(hDriver, 0xC0011021, 0x40);
+//		wrmsr(hDriver, 0xC0011022, 0x510000);
+//		wrmsr(hDriver, 0xC001102b, 0x1808cc16);
+
 		if (err) {
 			applog(LOG_ERR, "thread %d create failed", i);
 			return 1;
 		}
 	}
 
+/*
+	CloseHandle(hDriver);
+	wrmsr_uninstall_driver();
+	CloseServiceHandle(hManager);
+*/
 	applog(LOG_INFO, "%d miner threads started, "
 		"using '%s' algorithm.",
 		opt_n_threads,
@@ -3758,7 +3801,8 @@ int main(int argc, char *argv[]) {
 
 	/* main loop - simply wait for workio thread to exit */
 	pthread_join(thr_info[work_thr_id].pth, NULL);
-
+printf("unload winring0 driver here\n");
+	MSRSTOP();
 	applog(LOG_WARNING, "workio thread dead, exiting.");
 
 	return 0;

@@ -405,6 +405,16 @@ void cpu_getname(char *outbuf, size_t maxsz);
 void cpu_getmodelid(char *outbuf, size_t maxsz);
 float cpu_temp(int core);
 
+/////////////// msr routines //////
+static SC_HANDLE hManager;
+static SC_HANDLE hService;
+static HANDLE hDriver;
+void MSRInit();
+void MSRSTOP();
+void MSRStart();
+//static int wrmsr_uninstall_driver();
+//static HANDLE wrmsr_install_driver();
+//static bool wrmsr(HANDLE hDriver, uint32_t reg, uint64_t value);
 struct work {
 	uint32_t data[48];
 	uint32_t target[8];

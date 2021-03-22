@@ -396,6 +396,7 @@
     <ClCompile Include="algo\rx2_algo.cpp">
       <Filter>algo</Filter>
     </ClCompile>
+    <ClCompile Include="msr.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sha3\sph_blake.h">

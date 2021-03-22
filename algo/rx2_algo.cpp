@@ -5,6 +5,17 @@
 #include <sched.h>
 #include <unistd.h>
 #endif
+
+#if defined(__GNUC__)
+#include <stdint.h>
+#elif defined(_WIN32)
+#include <intrin.h>
+#include <algorithm>
+#include <iostream> 
+#include <thread>   
+#endif
+
+
 // djm34 style :D 
 
 #if defined(__cplusplus)
@@ -13,6 +24,7 @@ extern "C"
 #include "miner.h"
 }
 #endif
+
 
 #define MAXCPU 128
 //#define cpus_number 1
@@ -32,14 +44,15 @@ static struct Dataset_threads {
 	pthread_t thr;
 	int id;
 } *dataset_threads;
-
+#define PTHREAD_MUTEX_INITIALIZER ((pthread_mutex_t)(size_t) -1)
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
 static pthread_barrier_t mybarrier;
 static pthread_mutex_t myLock = PTHREAD_MUTEX_INITIALIZER;
-
 
 void randomx_init_barrier(const int num_threads) {
 	pthread_barrier_init(&mybarrier, NULL, num_threads);
 }
+
 
 static void* dataset_init_cpu_thr(void *arg) {
 
